@@ -247,7 +247,7 @@
     const v=values[field];
     const active=openField===field?' active':'';
     let inner,note='';
-    if(v){inner='<span class="val set">'+fmtGreg(v)+'</span>';note='<div class="note">Hijri <b>·</b> '+fmtHijri(v)+'</div>';}
+    if(v){const h=hijri(v);inner='<span class="val set">'+fmtGreg(v)+'</span>';note='<div class="note">Hijri: '+h.d+'/'+h.m+'/'+h.y+'</div>';}
     else{inner='<span class="val ph">'+label+'</span>';}
     return '<div class="fieldwrap" data-fw="'+field+'"><button class="field'+active+'" data-field="'+field+'">'+ICON.cal+inner+'</button>'+note+'</div>';
   }
