@@ -1,0 +1,457 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Date Picker A/B Test — Add Contract</title>
+<style>
+  :root{
+    --accent:#f50;
+    --text:#121212;
+    --muted:rgba(0,0,0,.4);
+    --faint:rgba(0,0,0,.28);
+    --subtle:rgba(0,0,0,.05);
+    --hover:rgba(0,0,0,.04);
+    --tertiary:#575757;
+    --border:#f0f0f0;
+    --border-subtle:rgba(0,0,0,.1);
+    --info-bg:#d6e9ff;
+    --info-fg:#002a80;
+    --base-bg:#f7f7f7;
+    --pill:999px;
+    --cell:min(48px, (100vw - 64px) / 7);
+    font-family:-apple-system,"SF Pro Text","SF Pro",system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{min-height:100%}
+  body{
+    margin:0;background:#e9eaec;color:var(--text);
+    padding:24px 16px 80px;display:flex;flex-direction:column;align-items:center;gap:16px;
+  }
+
+  /* ---------- test harness ---------- */
+  .harness{
+    width:min(940px,100%);background:#1c1d21;color:#fff;border-radius:16px;
+    padding:14px 16px;display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px;
+  }
+  .hbrand{font-size:11px;font-weight:600;letter-spacing:.6px;color:#8b9096;text-transform:uppercase;margin-right:auto;line-height:1.4}
+  .hbrand small{display:block;color:#5f636a;font-weight:500;letter-spacing:.2px;text-transform:none;font-size:10px}
+  .hgroup{display:flex;align-items:center;gap:8px}
+  .hlabel{font-size:12px;color:#8b9096;font-weight:500}
+  .seg{display:flex;background:#0f1013;border-radius:999px;padding:3px;gap:2px}
+  .seg button{border:0;background:transparent;color:#c7cace;font:inherit;font-size:12.5px;font-weight:600;padding:6px 12px;border-radius:999px;cursor:pointer;white-space:nowrap}
+  .seg button.on{background:var(--accent);color:#fff}
+
+  /* ---------- screen (contracts page = view) ---------- */
+  .screen{width:min(940px,100%);position:relative}
+  .page{background:#fff;border:1px solid var(--border);border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:32px;box-shadow:0 10px 30px rgba(0,0,0,.06)}
+  .page-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .page-h1{font-size:24px;font-weight:590;letter-spacing:-.24px;color:#000}
+  .newbtn{display:inline-flex;align-items:center;gap:8px;height:32px;min-width:64px;padding:0 10px;border:1px solid var(--border-subtle);background:#fff;border-radius:8px;font-size:14px;font-weight:510;letter-spacing:-.42px;color:#111;cursor:pointer}
+  .newbtn svg{width:16px;height:16px}
+
+  .summary{border:1px solid var(--border-subtle);border-radius:20px;padding:20px;display:flex;flex-direction:column;gap:20px}
+  .emp{display:flex;align-items:center;gap:16px}
+  .emp .art{width:48px;height:48px;border-radius:12px;background:#006aff;border:1px solid var(--border-subtle);display:grid;place-items:center;color:#fff;flex:none}
+  .emp .art svg{width:24px;height:24px}
+  .emp .who{display:flex;flex-direction:column;gap:4px;min-width:0}
+  .emp .name-row{display:flex;align-items:center;gap:12px}
+  .emp .name{font-size:16px;font-weight:590;letter-spacing:-.16px;color:#000}
+  .chip-active{background:#e3f2e6;color:#009048;border-radius:8px;height:24px;display:inline-flex;align-items:center;padding:0 6px;font-size:14px;font-weight:510;letter-spacing:-.42px}
+  .emp .sub{font-size:14px;font-weight:510;letter-spacing:-.42px;color:#000}
+  .hr{height:1px;background:var(--border);width:100%}
+  .inforow{display:flex;align-items:center;flex-wrap:wrap;gap:16px 40px}
+  .infofield{display:flex;flex-direction:column;gap:8px}
+  .flabel{font-size:12px;font-weight:510;letter-spacing:-.12px;color:#444;opacity:.6}
+  .fvalue{font-size:14px;font-weight:510;letter-spacing:-.42px;color:#000}
+  .inforow .arrow{color:var(--muted);display:grid;place-items:center}
+  .inforow .arrow svg{width:20px;height:20px}
+  .spacer{flex:1 1 20px;min-width:0}
+
+  .past{display:flex;flex-direction:column;gap:16px}
+  .past-h{font-size:16px;font-weight:590;letter-spacing:-.16px;color:#000}
+  .ctable{width:100%;border:1px solid var(--border);border-radius:16px;overflow:hidden;border-collapse:collapse}
+  .ctable th,.ctable td{text-align:left;padding:0 16px;height:56px;font-size:14px;font-weight:510;letter-spacing:-.42px;color:#000;border-bottom:1px solid var(--border);white-space:nowrap}
+  .ctable th{background:#f0f0f0}
+  .ctable tr:last-child td{border-bottom:0}
+  .tag{display:inline-flex;align-items:center;height:24px;padding:0 6px;border-radius:8px;font-size:14px;font-weight:510;letter-spacing:-.42px}
+  .tag.info{background:#d6e9ff;color:#006aff}
+  .tag.neutral{border:1px solid var(--border);color:rgba(0,0,0,.9)}
+
+  /* ---------- modal (create), shown as overlay ---------- */
+  .overlay{position:absolute;inset:0;background:rgba(15,16,19,.35);display:grid;place-items:center;padding:16px;z-index:40;border-radius:16px}
+  .modal{width:100%;max-width:600px;background:#fff;border:1px solid var(--border);border-radius:16px;display:flex;flex-direction:column;box-shadow:0 18px 48px rgba(0,0,0,.28)}
+  .m-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border)}
+  .m-title{font-size:18px;font-weight:510;letter-spacing:-.18px;color:#000}
+  .m-close{width:32px;height:32px;border:0;background:transparent;border-radius:999px;display:grid;place-items:center;cursor:pointer;color:#111}
+  .m-close:hover{background:var(--hover)}
+  .m-content{display:flex;flex-direction:column;gap:20px;padding:20px}
+
+  .chip{display:inline-flex;align-items:center;gap:2px;background:var(--info-bg);color:var(--info-fg);border-radius:6px;min-height:24px;padding:4px 6px;font-size:14px;font-weight:510;letter-spacing:-.42px;align-self:flex-start;max-width:100%}
+  .chip svg{width:16px;height:16px;flex:none}
+  .chip span{padding:0 2px}
+
+  .rows{display:flex;flex-direction:column;gap:12px}
+  .row{display:flex;gap:12px;align-items:flex-start}
+  .col{flex:1 1 0;min-width:0}
+
+  .input{display:flex;align-items:center;gap:8px;height:48px;padding:0 12px;border:1px solid var(--border-subtle);border-radius:12px;background:#fff}
+  .input .lbl{flex:1;min-width:0;font-size:14px;font-weight:510;letter-spacing:-.42px;color:var(--tertiary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .input.filled .lbl{color:#111}
+  .input svg{width:20px;height:20px;color:var(--muted);flex:none}
+
+  .toggle{display:flex;align-items:center;gap:8px;flex:1 1 0;min-width:0}
+  .tg{width:48px;height:24px;border-radius:999px;padding:4px;background:linear-gradient(236deg,#949494 12%,#dddddd 87%);display:flex;align-items:center;flex:none}
+  .tg i{width:28px;height:16px;background:#fff;border:2px solid rgba(0,0,0,.05);border-radius:999px;display:block}
+  .toggle span{font-size:14px;font-weight:510;letter-spacing:-.42px;color:#000}
+
+  .fieldwrap{flex:1 1 0;min-width:0;position:relative;display:flex;flex-direction:column;gap:4px}
+  .field{display:flex;align-items:center;gap:8px;height:48px;padding:0 12px;border:1px solid var(--border-subtle);border-radius:12px;background:#fff;width:100%;cursor:pointer;text-align:left;font:inherit}
+  .field:hover{border-color:rgba(0,0,0,.2)}
+  .field.readonly{cursor:default;background:#fafafa}
+  .field.readonly:hover{border-color:var(--border-subtle)}
+  .field.active{border-color:var(--accent);box-shadow:0 0 0 3px rgba(255,85,0,.15)}
+  .field svg{width:24px;height:24px;color:var(--tertiary);flex:none}
+  .field .val{flex:1;min-width:0;font-size:14px;font-weight:510;letter-spacing:-.42px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .field .val.ph{color:var(--tertiary)}
+  .field .val.set{color:#111}
+  .note{font-size:12px;font-weight:500;letter-spacing:-.2px;color:var(--muted);padding-left:2px}
+  .note b{color:var(--accent);font-weight:600}
+
+  .docs{display:flex;flex-direction:column;gap:12px}
+  .docs .lbl{font-size:14px;font-weight:510;letter-spacing:-.42px;color:#000}
+  .uploader{border:1px dashed var(--border-subtle);background:rgba(0,0,0,.05);border-radius:12px;padding:24px 8px;display:flex;flex-direction:column;align-items:center;gap:16px;text-align:center}
+  .uploader .u1{font-size:14px;font-weight:510;color:#000}
+  .uploader .u2{font-size:12px;color:var(--tertiary)}
+  .browse{border:1px solid var(--border-subtle);background:#fff;border-radius:8px;height:32px;padding:0 8px;font-size:14px;font-weight:510;cursor:pointer}
+  .filerow{display:flex;align-items:center;gap:12px;border:1px solid var(--border);border-radius:12px;padding:12px}
+  .filerow .fi{width:40px;height:40px;border-radius:8px;background:var(--subtle);display:grid;place-items:center;color:var(--tertiary);flex:none}
+  .filerow .fn{font-size:14px;font-weight:510;color:#000}
+  .filerow .fm{font-size:12px;color:var(--tertiary)}
+
+  .m-footer{display:flex;justify-content:flex-end;gap:8px;background:var(--base-bg);padding:12px;border-top:1px solid var(--border);border-radius:0 0 16px 16px}
+  .btn{height:32px;border-radius:8px;padding:0 14px;font-size:14px;font-weight:510;letter-spacing:-.42px;cursor:pointer;border:1px solid transparent;display:inline-flex;align-items:center;gap:6px}
+  .btn.secondary{background:#fff;border-color:var(--border-subtle);color:#111}
+  .btn.primary{background:var(--accent);color:#fff}
+  .btn svg{width:16px;height:16px}
+
+  /* ---------- picker (shared, both variants) ---------- */
+  .picker{
+    background:#fff;border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:16px;user-select:none;
+    box-shadow:0 12px 32px rgba(0,0,0,.18),0 2px 8px rgba(0,0,0,.1);
+    width:calc(var(--cell) * 7 + 32px);max-width:calc(100vw - 32px);
+  }
+  .pop{position:absolute;top:calc(100% + 8px);right:0;z-index:60}
+
+  .month-row{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%}
+  .selector{display:flex;align-items:center;gap:2px;min-width:0;position:relative}
+  .pill{display:flex;align-items:center;gap:4px;min-width:0;padding:8px 8px 8px 12px;border:0;background:transparent;border-radius:var(--pill);font:inherit;font-weight:500;font-size:14px;line-height:16px;letter-spacing:-.42px;color:var(--text);cursor:pointer;white-space:nowrap}
+  .pill[disabled]{cursor:default}
+  .pill span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pill:hover:not([disabled]){background:var(--hover)}
+  .pill svg{width:20px;height:20px;color:var(--muted);flex:none;transition:transform .15s ease}
+  .pill.open svg{transform:rotate(180deg)}
+  .subhead{color:var(--muted);font-size:13px;font-weight:500;letter-spacing:-.3px;white-space:nowrap;flex:none}
+
+  .cal-switch{position:relative}
+  .menu{position:absolute;top:calc(100% + 4px);left:0;z-index:20;background:#fff;border-radius:12px;padding:4px;min-width:150px;display:flex;flex-direction:column;gap:2px;box-shadow:0 8px 24px rgba(0,0,0,.14),0 1px 4px rgba(0,0,0,.08)}
+  .menu-item{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border:0;background:transparent;border-radius:8px;font:inherit;font-weight:500;font-size:14px;line-height:16px;letter-spacing:-.42px;color:var(--text);cursor:pointer;white-space:nowrap;text-align:left}
+  .menu-item:hover{background:var(--hover)}
+  .menu-item .ck{width:16px;height:16px;color:var(--accent);opacity:0;flex:none}
+  .menu-item.active .ck{opacity:1}
+
+  .controls{display:flex;flex:none}
+  .icon-btn{width:var(--cell);height:var(--cell);border:0;background:transparent;border-radius:var(--pill);display:grid;place-items:center;cursor:pointer;color:var(--text)}
+  .icon-btn:hover{background:var(--hover)}
+  .icon-btn svg{width:24px;height:24px}
+
+  .weekdays{display:grid;grid-template-columns:repeat(7,1fr);width:100%}
+  .weekdays span{height:var(--cell);display:grid;place-items:center;color:var(--muted);font-weight:500;font-size:14px;letter-spacing:-.42px}
+  .grid-days{display:grid;grid-template-columns:repeat(7,1fr);width:100%}
+  .grid-months{display:grid;grid-template-columns:repeat(4,1fr);width:100%}
+  .grid-years{display:grid;grid-template-columns:repeat(4,1fr);width:100%}
+
+  .cell{height:var(--cell);display:grid;place-items:center;border:0;background:transparent;cursor:pointer;color:var(--text)}
+  .grid-months .cell,.grid-years .cell{height:auto;min-height:calc(var(--cell) + 6px)}
+  .pillbox{width:var(--cell);height:var(--cell);display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:var(--pill);transition:background .12s ease}
+  .grid-months .pillbox,.grid-years .pillbox{width:100%;height:100%;padding:6px 4px}
+  .pillbox .d{font-size:14px;font-weight:500;line-height:16px;letter-spacing:-.42px}
+  .pillbox .sub{font-size:10px;font-weight:500;line-height:12px;color:var(--muted);margin-top:1px;letter-spacing:-.2px}
+  .pillbox .sub.mark{color:var(--accent);font-weight:600}
+  .cell:hover .pillbox{background:var(--hover)}
+  .cell.muted{color:var(--faint)} .cell.muted .sub{color:var(--faint)} .cell.muted:hover .pillbox{background:transparent}
+  .cell.today .pillbox{background:var(--subtle)}
+  .cell.selected .d{color:#fff}.cell.selected .sub,.cell.selected .sub.mark{color:rgba(255,255,255,.9)}
+  .cell.selected .pillbox,.cell.selected:hover .pillbox{background:var(--accent)}
+  .foot{text-align:center;color:var(--muted);font-size:12px;font-weight:500;letter-spacing:-.3px;padding-top:4px}
+</style>
+
+<div class="harness" id="harness"></div>
+<div class="screen" id="screen"></div>
+
+<script>
+(function(){
+  const GREG_LONG=["January","February","March","April","May","June","July","August","September","October","November","December"];
+  const HIJRI_LONG=["Muharram","Safar","Rabiʻ I","Rabiʻ II","Jumada I","Jumada II","Rajab","Shaʻban","Ramadan","Shawwal","Dhuʻl-Qiʻdah","Dhuʻl-Hijjah"];
+  const HIJRI_SHORT=["Muharram","Safar","Rabiʻ I","Rabiʻ II","Jumada I","Jumada II","Rajab","Shaʻban","Ramadan","Shawwal","Dhuʻl-Qiʻ.","Dhuʻl-Hij."];
+  const HIJRI_ABBR=["Muh","Saf","Rabi 1","Rabi 2","Jum 1","Jum 2","Rajab","Shaʻban","Ram","Shaw","Qiʻdah","Hijjah"];
+  const WD=["S","M","T","W","T","F","S"];
+
+  const ICON={
+    cal:'<svg viewBox="0 0 24 24" fill="none"><rect x="3.5" y="5" width="17" height="15" rx="2.5" stroke="currentColor" stroke-width="1.6"/><path d="M3.5 9.5h17M8 3.5v3M16 3.5v3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+    down:'<svg viewBox="0 0 20 20" fill="none"><path d="M6 8l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    left:'<svg viewBox="0 0 24 24" fill="none"><path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    right:'<svg viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    ck:'<svg class="ck" viewBox="0 0 16 16" fill="none"><path d="M3.5 8.5l3 3 6-7" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    x:'<svg viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+    info:'<svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.3" stroke="currentColor" stroke-width="1.4"/><path d="M8 7.2v3.4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="8" cy="5.2" r=".5" fill="currentColor"/></svg>',
+    up:'<svg viewBox="0 0 24 24" fill="none"><path d="M12 15V4M8 8l4-4 4 4M5 15v3a2 2 0 002 2h10a2 2 0 002-2v-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    file:'<svg viewBox="0 0 24 24" fill="none"><path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8l-5-5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M14 3v5h5" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>',
+    add:'<svg viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>'
+  };
+
+  /* ---------- state ---------- */
+  let variant='A';               // 'A' Hijri-first  |  'B' Gregorian + Hijri
+  let mode='create';             // 'create' | 'view'
+  const today=atNoon(new Date());
+  const values={start:null,end:null};
+  const sample={start:atNoon(new Date(2025,6,1)),end:atNoon(new Date(2026,5,30))};
+  let openField=null, popEl=null, pk=null;
+
+  /* ---------- date helpers ---------- */
+  function atNoon(d){return new Date(d.getFullYear(),d.getMonth(),d.getDate(),12,0,0,0);}
+  function pad(n){return String(n).padStart(2,'0');}
+  function fmtGreg(d){return pad(d.getDate())+'/'+pad(d.getMonth()+1)+'/'+d.getFullYear();}
+  function hijri(d){return partsC(d,'islamic-umalqura');}
+  function fmtHijri(d){const h=hijri(d);return h.d+' '+HIJRI_LONG[h.m-1]+' '+h.y;}
+  function two(y){return String(y).slice(-2);}
+  function gDim(y,m){return new Date(y,m+1,0).getDate();}
+  function sameDay(a,b){return a&&b&&a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate();}
+  function partsC(date,cal){const f=new Intl.DateTimeFormat('en-US-u-ca-'+cal,{day:'numeric',month:'numeric',year:'numeric'});const o={};for(const p of f.formatToParts(date))if(p.type!=='literal')o[p.type]=parseInt(p.value,10);return{y:o.year,m:o.month,d:o.day};}
+  function monthFirstC(date,cal){const p=partsC(date,cal);const f=new Date(date);f.setDate(date.getDate()-(p.d-1));return atNoon(f);}
+  function dimC(first,cal){const p=partsC(first,cal);let c=0;const x=new Date(first);while(c<32){const q=partsC(x,cal);if(q.m!==p.m||q.y!==p.y)break;c++;x.setDate(x.getDate()+1);}return c;}
+  function addMonthsC(date,n,cal){let cur=monthFirstC(date,cal);if(n>0){for(let i=0;i<n;i++){cur.setDate(cur.getDate()+dimC(cur,cal));cur=monthFirstC(cur,cal);}}else{for(let i=0;i<-n;i++){cur.setDate(cur.getDate()-1);cur=monthFirstC(cur,cal);}}return cur;}
+
+  /* ---------- harness ---------- */
+  function seg(ctrl,opts){
+    return '<div class="seg">'+opts.map(o=>'<button data-ctrl="'+ctrl+'" data-val="'+o.v+'" class="'+((ctrl==='variant'?variant:mode)===o.v?'on':'')+'">'+o.t+'</button>').join('')+'</div>';
+  }
+  function renderHarness(){
+    document.getElementById('harness').innerHTML=
+      '<div class="hbrand">A/B Test · Date picker<small>Prototype harness — not part of the product UI</small></div>'+
+      '<div class="hgroup"><span class="hlabel">Picker</span>'+seg('variant',[{v:'A',t:'A · Hijri-first'},{v:'B',t:'B · Greg + Hijri'}])+'</div>'+
+      '<div class="hgroup"><span class="hlabel">Mode</span>'+seg('mode',[{v:'create',t:'Create'},{v:'view',t:'View only'}])+'</div>';
+  }
+
+  /* ---------- screen: contracts page (view) + add-contract modal (create) ---------- */
+  function inputHTML(label){return '<div class="input"><span class="lbl">'+label+'</span>'+ICON.down+'</div>';}
+  function fieldHTML(field,label){
+    const v=values[field];
+    const active=openField===field?' active':'';
+    let inner,note='';
+    if(v){inner='<span class="val set">'+fmtGreg(v)+'</span>';note='<div class="note">Hijri <b>·</b> '+fmtHijri(v)+'</div>';}
+    else{inner='<span class="val ph">'+label+'</span>';}
+    return '<div class="fieldwrap" data-fw="'+field+'"><button class="field'+active+'" data-field="'+field+'">'+ICON.cal+inner+'</button>'+note+'</div>';
+  }
+  function info(label,val){return '<div class="infofield"><span class="flabel">'+label+'</span><span class="fvalue">'+val+'</span></div>';}
+  function crow(type,pay,s,e){return '<tr><td>'+type+'</td><td>'+pay+'</td><td>'+s+'</td><td>'+e+'</td></tr>';}
+
+  function renderContracts(){
+    return '<div class="page">'+
+      '<div class="page-head"><div class="page-h1">Contracts</div>'+
+        '<button class="newbtn" data-open-create>New contract '+ICON.add+'</button></div>'+
+      '<div class="summary">'+
+        '<div class="emp"><span class="art">'+ICON.file+'</span>'+
+          '<div class="who"><div class="name-row"><span class="name">Employee</span><span class="chip-active">Active</span></div>'+
+          '<div class="sub" dir="auto">Marn - مرن</div></div></div>'+
+        '<div class="hr"></div>'+
+        '<div class="inforow">'+
+          info('Probation','90 Days')+info('Notice','30 Days')+info('GOSI Base','Total Earnings')+
+          info('Hour Cap','95 hrs/month')+info('Pay','Hourly')+
+          '<div class="spacer"></div>'+
+          info('From', values.start?fmtGreg(values.start):'04 Aug, 2025')+
+          '<div class="arrow">'+ICON.right+'</div>'+
+          info('To', values.end?fmtGreg(values.end):'Infinite')+
+        '</div></div>'+
+      '<div class="past"><div class="past-h">Past Contracts</div>'+
+        '<table class="ctable"><thead><tr><th>Type</th><th>Pay Structure</th><th>Started</th><th>Ended</th></tr></thead><tbody>'+
+          crow('<span class="tag info">Marn</span>','Hourly','20/3/2026','20/3/2026')+
+          crow('<span class="tag info">Marn</span>','Hourly','20/3/2026','20/3/2026')+
+          crow('<span class="tag neutral">Indefinite</span>','Monthly','20/3/2026','20/3/2026')+
+          crow('<span class="tag neutral">Fixed</span>','Monthly','20/3/2026','20/3/2026')+
+        '</tbody></table></div>'+
+    '</div>';
+  }
+
+  function renderModal(){
+    return '<div class="overlay" data-backdrop><div class="modal">'+
+      '<div class="m-header"><div class="m-title">Add Contract</div>'+
+        '<button class="m-close" data-close-modal>'+ICON.x+'</button></div>'+
+      '<div class="m-content">'+
+        '<div class="chip">'+ICON.info+'<span>Only non-Marn contracts can be added. To switch types, offboard the employee first.</span></div>'+
+        '<div class="rows">'+
+          '<div class="row"><div class="col">'+inputHTML('Employment type')+'</div>'+
+            '<div class="col"><div class="toggle"><span class="tg"><i></i></span><span>Remote Employee</span></div></div></div>'+
+          '<div class="row"><div class="col">'+inputHTML('Contract type')+'</div>'+fieldHTML('start','Start date')+'</div>'+
+          '<div class="row"><div class="col">'+inputHTML('Contract period')+'</div>'+fieldHTML('end','End date')+'</div>'+
+          '<div class="row"><div class="col">'+inputHTML('Notice period')+'</div>'+
+            '<div class="col">'+inputHTML('Probation period')+'</div></div>'+
+        '</div>'+
+        '<div class="docs"><div class="lbl">Attach work contract</div>'+
+          '<div class="uploader"><span style="color:#111">'+ICON.up+'</span>'+
+          '<div><div class="u1">Drop your file here to upload</div><div class="u2">Maximum size 10MB</div></div>'+
+          '<button class="browse">Browse</button></div></div>'+
+      '</div>'+
+      '<div class="m-footer"><button class="btn secondary" data-close-modal>Cancel</button>'+
+        '<button class="btn primary" data-close-modal>Add contract '+ICON.add+'</button></div>'+
+    '</div></div>';
+  }
+
+  function renderScreen(){
+    document.getElementById('screen').innerHTML = renderContracts() + (mode==='create'?renderModal():'');
+  }
+
+  /* ---------- picker: shared UI bits ---------- */
+  function pill(text,clickable,open){
+    return '<button class="pill'+(open?' open':'')+'" data-pk="label"'+(clickable?'':' disabled')+'><span>'+text+'</span>'+(clickable?ICON.down:'')+'</button>';
+  }
+  function controls(){
+    return '<div class="controls"><button class="icon-btn" data-pk="prev">'+ICON.left+'</button>'+
+           '<button class="icon-btn" data-pk="next">'+ICON.right+'</button></div>';
+  }
+  function calSwitch(){
+    return '<div class="cal-switch"><button class="pill'+(pk.menuOpen?' open':'')+'" data-pk="toggle-cal"><span>'+(pk.cal==='gregory'?'Gregorian':'Hijri')+'</span>'+ICON.down+'</button>'+
+      (pk.menuOpen?('<div class="menu">'+
+        '<button class="menu-item'+(pk.cal!=='gregory'?' active':'')+'" data-pk="pick-cal" data-cal="islamic-umalqura"><span>Hijri</span>'+ICON.ck+'</button>'+
+        '<button class="menu-item'+(pk.cal==='gregory'?' active':'')+'" data-pk="pick-cal" data-cal="gregory"><span>Gregorian</span>'+ICON.ck+'</button></div>'):'')+'</div>';
+  }
+  function weekdaysRow(){return '<div class="weekdays">'+WD.map(d=>'<span>'+d+'</span>').join('')+'</div>';}
+
+  /* ---------- variant A: Hijri-first (with Hijri⇄Greg dropdown) ---------- */
+  function pickerA(){
+    const cal=pk.cal;
+    const names=cal==='gregory'?GREG_LONG:HIJRI_LONG;
+    const short=cal==='gregory'?GREG_LONG:HIJRI_SHORT;
+    if(pk.view==='days'){
+      const cur=monthFirstC(pk.viewDate,cal),cp=partsC(cur,cal);
+      const offset=cur.getDay(),dim=dimC(cur,cal),rows=Math.ceil((offset+dim)/7);
+      const start=new Date(cur);start.setDate(cur.getDate()-offset);
+      let h='<div class="month-row"><div class="selector">'+pill(names[cp.m-1]+' '+cp.y,true)+calSwitch()+'</div>'+controls()+'</div>'+
+        '<div>'+weekdaysRow()+'<div class="grid-days">';
+      for(let i=0;i<rows*7;i++){
+        const cell=atNoon(new Date(start.getFullYear(),start.getMonth(),start.getDate()+i));
+        const q=partsC(cell,cal),inM=q.m===cp.m&&q.y===cp.y;
+        let cls='cell';if(!inM)cls+=' muted';else if(sameDay(cell,pk.selected))cls+=' selected';else if(sameDay(cell,today))cls+=' today';
+        h+='<button class="'+cls+'" data-pk="pick-day" data-ts="'+cell.getTime()+'"><span class="pillbox"><span class="d">'+q.d+'</span></span></button>';
+      }
+      return h+'</div></div>';
+    }
+    if(pk.view==='months'){
+      const cur=monthFirstC(pk.viewDate,cal),cp=partsC(cur,cal);
+      let h='<div class="month-row"><div class="selector">'+pill(String(cp.y),true)+calSwitch()+'</div>'+controls()+'</div><div class="grid-months">';
+      for(let m=1;m<=12;m++){const cls='cell'+(m===cp.m?' selected':'');h+='<button class="'+cls+'" data-pk="pick-month" data-m="'+m+'"><span class="pillbox"><span class="d">'+short[m-1]+'</span></span></button>';}
+      return h+'</div>';
+    }
+    const cur=monthFirstC(pk.viewDate,cal),cp=partsC(cur,cal);
+    if(pk.yearPageStart===null)pk.yearPageStart=cp.y-9;
+    let h='<div class="month-row"><div class="selector">'+pill(pk.yearPageStart+' – '+(pk.yearPageStart+19),false)+calSwitch()+'</div>'+controls()+'</div><div class="grid-years">';
+    for(let i=0;i<20;i++){const y=pk.yearPageStart+i;const cls='cell'+(y===cp.y?' selected':'');h+='<button class="'+cls+'" data-pk="pick-year" data-y="'+y+'"><span class="pillbox"><span class="d">'+y+'</span></span></button>';}
+    return h+'</div>';
+  }
+
+  /* ---------- variant B: Gregorian primary + Hijri annotations ---------- */
+  function footFor(y,m){const hs=hijri(atNoon(new Date(y,m,1))),he=hijri(atNoon(new Date(y,m,gDim(y,m))));let t='Hijri: '+HIJRI_LONG[hs.m-1]+' '+hs.y;if(hs.m!==he.m||hs.y!==he.y)t+=' | '+HIJRI_LONG[he.m-1]+' '+he.y;return t;}
+  function pickerB(){
+    if(pk.view==='days'){
+      const gY=pk.viewDate.getFullYear(),gM=pk.viewDate.getMonth();
+      const first=atNoon(new Date(gY,gM,1)),dim=gDim(gY,gM),offset=first.getDay(),rows=Math.ceil((offset+dim)/7);
+      const hs=hijri(first),he=hijri(atNoon(new Date(gY,gM,dim)));
+      let range=HIJRI_ABBR[hs.m-1];if(hs.m!==he.m||hs.y!==he.y)range+=' – '+HIJRI_ABBR[he.m-1];
+      range+=' '+(hs.y===he.y?two(hs.y):two(hs.y)+'/'+two(he.y));
+      let h='<div class="month-row"><div class="selector">'+pill(GREG_LONG[gM],true)+'<span class="subhead">· '+range+'</span></div>'+controls()+'</div>'+
+        '<div>'+weekdaysRow()+'<div class="grid-days">';
+      for(let i=0;i<rows*7;i++){
+        const date=atNoon(new Date(gY,gM,1-offset+i)),d=date.getDate(),inM=date.getMonth()===gM&&date.getFullYear()===gY,hh=hijri(date),mark=hh.d===1;
+        const sub=mark?HIJRI_ABBR[hh.m-1]:String(hh.d);
+        let cls='cell';if(!inM)cls+=' muted';else if(sameDay(date,pk.selected))cls+=' selected';else if(sameDay(date,today))cls+=' today';
+        h+='<button class="'+cls+'" data-pk="pick-day" data-ts="'+date.getTime()+'"><span class="pillbox"><span class="d">'+d+'</span><span class="sub'+(mark?' mark':'')+'">'+sub+'</span></span></button>';
+      }
+      return h+'</div></div>';
+    }
+    if(pk.view==='months'){
+      const gY=pk.viewDate.getFullYear();pk.defaultFoot=footFor(gY,pk.viewDate.getMonth());
+      let h='<div class="month-row"><div class="selector">'+pill(String(gY),true)+'</div>'+controls()+'</div><div class="grid-months">';
+      for(let m=0;m<12;m++){const cls='cell'+(m===pk.viewDate.getMonth()?' selected':'');h+='<button class="'+cls+'" data-pk="pick-month" data-m="'+m+'" data-foot="'+footFor(gY,m)+'"><span class="pillbox"><span class="d">'+GREG_LONG[m]+'</span></span></button>';}
+      return h+'</div><div class="foot" id="foot">'+pk.defaultFoot+'</div>';
+    }
+    const gY=pk.viewDate.getFullYear();if(pk.yearPageStart===null)pk.yearPageStart=Math.floor(gY/20)*20;
+    let h='<div class="month-row"><div class="selector">'+pill(GREG_LONG[pk.viewDate.getMonth()]+' '+gY,true)+'</div>'+controls()+'</div><div class="grid-years">';
+    for(let i=0;i<20;i++){const Y=pk.yearPageStart+i;const hj=hijri(atNoon(new Date(Y,0,1))).y,hd=hijri(atNoon(new Date(Y,11,31))).y;const sub=hj===hd?String(hj):hj+' / '+hd;const cls='cell'+(Y===gY?' selected':'');h+='<button class="'+cls+'" data-pk="pick-year" data-y="'+Y+'"><span class="pillbox"><span class="d">'+Y+'</span><span class="sub">'+sub+'</span></span></button>';}
+    return h+'</div>';
+  }
+
+  function renderPicker(){ popEl.innerHTML = variant==='A'?pickerA():pickerB(); }
+
+  /* ---------- open / close ---------- */
+  function openPicker(field){
+    closePicker();
+    openField=field;
+    const cur=values[field]||today;
+    pk={view:'days',viewDate:atNoon(cur),selected:values[field]?atNoon(values[field]):null,cal:'islamic-umalqura',menuOpen:false,yearPageStart:null,defaultFoot:''};
+    renderScreen(); // marks field active
+    const wrap=document.querySelector('[data-fw="'+field+'"]');
+    popEl=document.createElement('div');popEl.className='picker pop';wrap.appendChild(popEl);
+    popEl.addEventListener('mouseleave',()=>{if(variant==='B'&&pk.view==='months'){const f=popEl.querySelector('#foot');if(f)f.textContent=pk.defaultFoot;}});
+    renderPicker();
+  }
+  function closePicker(){if(popEl){popEl.remove();popEl=null;}if(openField){openField=null;renderScreen();}}
+  function commit(ts){values[openField]=atNoon(new Date(ts));closePicker();}
+
+  /* ---------- picker actions ---------- */
+  function handlePk(btn){
+    const act=btn.dataset.pk;
+    if(variant==='A'){
+      if(act==='toggle-cal'){pk.menuOpen=!pk.menuOpen;renderPicker();return;}
+      if(act==='pick-cal'){pk.cal=btn.dataset.cal;pk.menuOpen=false;pk.yearPageStart=null;renderPicker();return;}
+      pk.menuOpen=false;
+      const cal=pk.cal,cur=monthFirstC(pk.viewDate,cal),cp=partsC(cur,cal);
+      if(act==='label'){if(pk.view==='days')pk.view='months';else if(pk.view==='months'){pk.view='years';pk.yearPageStart=cp.y-9;}}
+      else if(act==='prev'){if(pk.view==='days')pk.viewDate=addMonthsC(cur,-1,cal);else if(pk.view==='months')pk.viewDate=addMonthsC(cur,-12,cal);else pk.yearPageStart-=20;}
+      else if(act==='next'){if(pk.view==='days')pk.viewDate=addMonthsC(cur,1,cal);else if(pk.view==='months')pk.viewDate=addMonthsC(cur,12,cal);else pk.yearPageStart+=20;}
+      else if(act==='pick-day'){commit(+btn.dataset.ts);return;}
+      else if(act==='pick-month'){pk.viewDate=addMonthsC(cur,parseInt(btn.dataset.m,10)-cp.m,cal);pk.view='days';}
+      else if(act==='pick-year'){pk.viewDate=addMonthsC(cur,(parseInt(btn.dataset.y,10)-cp.y)*12,cal);pk.view='months';}
+      renderPicker();return;
+    }
+    // variant B
+    const gY=pk.viewDate.getFullYear(),gM=pk.viewDate.getMonth();
+    if(act==='label'){if(pk.view==='days')pk.view='months';else if(pk.view==='months'){pk.view='years';pk.yearPageStart=Math.floor(gY/20)*20;}else pk.view='days';}
+    else if(act==='prev'){if(pk.view==='days')pk.viewDate=atNoon(new Date(gY,gM-1,1));else if(pk.view==='months')pk.viewDate=atNoon(new Date(gY-1,gM,1));else pk.yearPageStart-=20;}
+    else if(act==='next'){if(pk.view==='days')pk.viewDate=atNoon(new Date(gY,gM+1,1));else if(pk.view==='months')pk.viewDate=atNoon(new Date(gY+1,gM,1));else pk.yearPageStart+=20;}
+    else if(act==='pick-day'){commit(+btn.dataset.ts);return;}
+    else if(act==='pick-month'){pk.viewDate=atNoon(new Date(gY,parseInt(btn.dataset.m,10),1));pk.view='days';}
+    else if(act==='pick-year'){pk.viewDate=atNoon(new Date(parseInt(btn.dataset.y,10),gM,1));pk.view='months';}
+    renderPicker();
+  }
+
+  /* ---------- global events ---------- */
+  document.addEventListener('click',function(e){
+    const ctrl=e.target.closest('[data-ctrl]');
+    if(ctrl){closePicker();if(ctrl.dataset.ctrl==='variant')variant=ctrl.dataset.val;else mode=ctrl.dataset.val;renderHarness();renderScreen();return;}
+    if(e.target.closest('[data-open-create]')){closePicker();mode='create';renderHarness();renderScreen();return;}
+    if(e.target.closest('[data-close-modal]')){closePicker();mode='view';renderHarness();renderScreen();return;}
+    if(popEl){const p=e.target.closest('[data-pk]');if(p&&popEl.contains(p)){handlePk(p);return;}}
+    const field=e.target.closest('[data-field]');
+    if(field){const f=field.dataset.field;if(openField===f)closePicker();else openPicker(f);return;}
+    const bd=e.target.closest('[data-backdrop]');
+    if(bd&&e.target===bd){if(openField){closePicker();}else{mode='view';renderHarness();renderScreen();}return;}
+    if(openField&&popEl&&!popEl.contains(e.target))closePicker();
+  });
+  document.addEventListener('mouseover',function(e){
+    if(!popEl||variant!=='B'||pk.view!=='months')return;
+    const cell=e.target.closest('[data-foot]'),foot=popEl.querySelector('#foot');
+    if(cell&&foot)foot.textContent=cell.dataset.foot;
+  });
+
+  renderHarness();
+  renderScreen();
+})();
+</script>
